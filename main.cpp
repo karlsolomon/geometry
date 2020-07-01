@@ -4,16 +4,13 @@
 #include <cstdlib>
 #include <vector>
 using namespace std;
-// using namespace Geometry;
-// #include "Point.h"
-// #include "Line.h"
-// #include "LineSegment.h"
 
 static bool m_logEnable = false;
 
 #define PRINT(...) if(m_logEnable) printf(__VA_ARGS__)
 #define LOG_ENABLE() m_logEnable = true
 #define LOG_DISABLE() m_logEnable = false
+#define FP_ACCURACY ((double)0.00000001)
 
 static bool fequals(double a, double b)
 {
@@ -24,10 +21,10 @@ static bool fequals(double a, double b)
     }
     else
     {
-        floatEqual = abs(a-b) < 0.0000001;
+        floatEqual = (abs(a-b) < FP_ACCURACY);
     }
 	return floatEqual;
-}
+}   
 
 class Point {
 public:
@@ -267,28 +264,18 @@ int main(void) {
 	vector<Line> perpendicularLines;
 	for(int i = 0; i < segments.size(); i++) {
 		perpendicularLines.push_back(segments[i].getPerpendicular());
-
-        PRINT("seg (%lf,%lf)\n", segments[i].getSlope(), segments[i].getIntercept());
-        PRINT("\tmidpt: (%lf, %lf)\n", segments[i].getMidPoint().getX(), segments[i].getMidPoint().getY());
-        PRINT("\tperp = (%lf, %lf)\n", perpendicularLines[i].getSlope(), perpendicularLines[i].getIntercept());
 	}
 
 	bool los;
 	vector<Line> symmetryLines;
 	for(int i = 0; i < segments.size(); i++) {
 		los = false;
-		// PRINT("\n i = %i\n", i);
-		// PRINT("perp = (%lf, %lf); midpt = (%lf, %lf)\n", perpendicularLines[i].getSlope(), perpendicularLines[i].getIntercept(), segments[i].getMidPoint().getX(), segments[i].getMidPoint().getY());
 		for(int j = 0; j < points.size(); j++) {
 			// It is a line of symmetry if there is a point on this line which
 			// is not on the originating line segment (because that would be another point on
 			// the original line, not a polygon)
-			// PRINT("\n\tp = (%lf,%lf)\n", points[j].getX(), points[j].getY());
 			if(perpendicularLines[i].contains(points[j]) && !segments[i].contains(points[j])) {
-				LOG_ENABLE();
-                PRINT("\n\t\tnew sym1 m = %lf, b = %lf\n", perpendicularLines[i].getSlope(), perpendicularLines[i].getIntercept());
-				los = true;
-                LOG_DISABLE();
+				los = true;\
 				break;
 			}
 		}
@@ -296,23 +283,17 @@ int main(void) {
 		// This part requires that segment is a Set, not a Vector
 		if(!los) {
 			for(int j = i+1; j < segments.size(); j++) {
-				// PRINT("\n\ts = (%lf,%lf); midpt = (%lf, %lf)\n", segments[j].getSlope(), segments[j].getIntercept(), segments[j].getMidPoint().getX(), segments[j].getMidPoint().getY());
 				bool a = segments[i].parallel(segments[j]);
                 bool b = perpendicularLines[i].contains(segments[j].getMidPoint());
                 bool c = !segments[i].contains(segments[j].getMidPoint());
-                // PRINT("\t\tres: %d%d%d\n", a, b, c);
                 if(a && b && c) {
-                    LOG_ENABLE();
-					PRINT("\n\t\tnew sym2 m = %lf, b = %lf\n", perpendicularLines[i].getSlope(), perpendicularLines[i].getIntercept());
 					los = true;
-                    LOG_DISABLE();
 					break;
 				}
 			}
 		}
 		if(los) {
 			symmetryLines.push_back(perpendicularLines[i]);
-			// PRINT("\nnew sym m = %lf, b = %lf\n", perpendicularLines[i].getSlope(), perpendicularLines[i].getIntercept());
 		}
 	}
 	return 0;
