@@ -3,16 +3,17 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <set>
 using namespace std;
 
-static bool m_logEnable = false;
+static bool m_logEnable = true;
 
 #define PRINT(...) if(m_logEnable) printf(__VA_ARGS__)
 #define LOG_ENABLE() m_logEnable = true
 #define LOG_DISABLE() m_logEnable = false
 #define FP_ACCURACY ((double)0.00000001)
 
-static bool fequals(double a, double b)
+static bool dEquals(double a, double b)
 {
     bool floatEqual = false;
     if(isinf(a) && isinf(b))
@@ -24,7 +25,7 @@ static bool fequals(double a, double b)
         floatEqual = (abs(a-b) < FP_ACCURACY);
     }
 	return floatEqual;
-}   
+}
 
 class Point {
 public:
@@ -33,16 +34,27 @@ public:
 		this->y = y;
 	}
 
-	double getX(void) {
+	double getX(void) const {
 		return this->x;
 	}
-	double getY(void) {
+	double getY(void) const {
 		return this->y;
 	}
-	bool equals(Point p) {
-		return (fequals(p.getY(),this->getY())) && (fequals(p.getX(),this->getX()));
-	}
-
+    bool operator<(const Point& l) const {
+        bool lessThanP = false;
+        if(dEquals(this->getX(), l.getX()))
+        {
+            lessThanP = this->getY() < l.getY();
+        }
+        else
+        {
+            lessThanP = this->getX() < l.getX();
+        }
+        return lessThanP;
+    }
+    bool operator==(const Point& l) const {
+        return ((*this) < l) ^ (l < (*this));
+    }
 private:
 	double x;
 	double y;
@@ -104,12 +116,11 @@ class Line {
         }
     }
 
-
 public:
     Line(double m = 0.0, double b = 0.0) {
         this->m = m;
         this->b = b;
-        if(isinf(this->m) || (fequals(this->m, -0.0)))
+        if(isinf(this->m) || (dEquals(this->m, -0.0)))
         {
         	this->m = abs(this->m);
         }
@@ -125,7 +136,7 @@ public:
 
     Line(Point p1, Point p2) {
         this->m = (p2.getY() - p1.getY()) / (p2.getX() - p1.getX());
-        if(isinf(this->m) || (fequals(this->m, -0.0)))
+        if(isinf(this->m) || (dEquals(this->m, -0.0)))
         {
         	this->m = abs(this->m);
         }
@@ -138,15 +149,15 @@ public:
         }
     }
 
-    double getSlope(void) {
+    double getSlope(void) const {
         return this->m;
     }
-    double getIntercept(void) {
+    double getIntercept(void) const {
         return this->b;
     }
     bool contains(Point p) {
-    	bool contains = fequals(p.getY() - (this->m)*p.getX(), this->getIntercept());
-    	if(isinf(this->m) && fequals(p.getX(), this->b))
+    	bool contains = dEquals(p.getY() - (this->m)*p.getX(), this->getIntercept());
+    	if(isinf(this->m) && dEquals(p.getX(), this->b))
     	{
 			contains = true;
     	}
@@ -154,54 +165,31 @@ public:
     }
     bool isPerpendicular(Line l) {
     	bool perpendicular = false;
-    	if((isinf(l.getSlope()) && fequals(this->getSlope(), 0.0)) || 
-    	  (isinf(this->getSlope()) && fequals(l.getSlope(),0.0)))
+    	if((isinf(l.getSlope()) && dEquals(this->getSlope(), 0.0)) || 
+    	  (isinf(this->getSlope()) && dEquals(l.getSlope(),0.0)))
     	{
     		perpendicular = true;
     	}
     	else
     	{
-    		perpendicular = fequals(this->getSlope(),((-1.0) / l.getSlope()));
+    		perpendicular = dEquals(this->getSlope(),((-1.0) / l.getSlope()));
     	}
         return perpendicular;
-    }
-
-    bool equals(Line l) {
-        return (fequals(l.getSlope(), this->getSlope())) && (fequals(l.getIntercept(), this->getIntercept()));
-    }
-
-    int hashCode(){
-        return this->hash;
     }
 
     // does not include equal lines
     bool parallel(Line l) {
         bool parallel = false;
-        parallel = fequals(l.getSlope(),this->getSlope());
+        parallel = dEquals(l.getSlope(),this->getSlope());
         return parallel;
-    }
-
-    bool operator<(Line &l) {
-        bool thisSmaller = false;
-        if(fequals(l.getSlope(), this->getSlope()))
-        {
-            thisSmaller = this->getIntercept() < l.getIntercept();
-        }
-        else
-        {
-            thisSmaller = this->getSlope() < l.getSlope();
-        }
-        return thisSmaller;
-    }
-
-    static bool comp(Line l1, Line l2) {
-        return l1 < l2;
     }
 }; 
 
 class LineSegment : public Line {
 public:
     LineSegment(Point p1, Point p2) : Line(p1, p2) {
+        this->p1 = p1;
+        this->p2 = p2;
         double midY = ((p2.getY() - p1.getY()) / 2) + p1.getY();
         double midX = ((p2.getX() - p1.getX()) / 2) + p1.getX();
         this->midpt = Point(midX, midY);
@@ -218,7 +206,7 @@ public:
         {
             perpIntercept = this->getMidPoint().getY();
         }
-        else if(fequals(this->getSlope(), 0.0))
+        else if(dEquals(this->getSlope(), 0.0))
         {
             perpIntercept = this->getMidPoint().getX();
         }
@@ -230,16 +218,41 @@ public:
         this->perpendicular = Line(perpSlope,perpIntercept);
     }
 
-    Point getMidPoint(void) {
+    Point getMidPoint(void) const {
     	return this->midpt;
     }
-    Line getPerpendicular(void) {
+    Line getPerpendicular(void) const {
         return this->perpendicular;
+    }
+    bool operator<(const LineSegment& l) const {
+        bool equal = ((this->p1 == l.p1) && (this->p2 == l.p2)) ||
+                     ((this->p2 == l.p1) && (this->p1 == l.p2));
+        bool lessThanL = false;
+        if(!equal)
+        {
+            if(this->p1 == l.p1)
+            {
+                lessThanL = this->p2 < l.p2;
+            }
+            else
+            {
+                lessThanL = this->p1 < l.p1;
+            }
+        }
+        return lessThanL;
+    }
+
+    bool operator==(const LineSegment& l) const {
+        return ((*this) < l) ^ (l < (*this));
+    }
+    bool operator!=(const LineSegment& l) const {
+        return !((*this) == l);
     }
 private:
 	Point midpt;
+    Point p1;
+    Point p2;
 	Line perpendicular;
-    bool perpInit;
 };
 
 int main(void) {
@@ -251,51 +264,57 @@ int main(void) {
 	points.push_back(Point(-1.0, 0.0));
 	points.push_back(Point(0.0, -1.0));
 	points.push_back(Point(-1.0, -1.0));
+    points.push_back(Point(1.0, 1.0));
 
 	// create line segment for all point pairs
-	vector<LineSegment> segments;
+	set<LineSegment> segments;
 	for(long i = 0; i < points.size(); i++) {
 		for(long j = i+1; j < points.size(); j++) {
-			segments.push_back(LineSegment(points[i], points[j]));
+			segments.insert(LineSegment(points[i], points[j]));
+            PRINT("seg (%lf, %lf) --> (%lf, %lf) \n", points[i].getX(), points[i].getY(), points[j].getX(), points[j].getY());
 		}
 	}
 
 	// // for each line segment
 	vector<Line> perpendicularLines;
-	for(int i = 0; i < segments.size(); i++) {
-		perpendicularLines.push_back(segments[i].getPerpendicular());
+    std::set<LineSegment>::iterator it;
+
+    PRINT("seg size = %i", (int) segments.size());
+	for(it = segments.begin(); it != segments.end(); ++it) {
+        PRINT("seg(%lf, %lf)\n", it->getSlope(), it->getIntercept());
+		// perpendicularLines.push_back(segments[i].getPerpendicular());
 	}
 
-	bool los;
-	vector<Line> symmetryLines;
-	for(int i = 0; i < segments.size(); i++) {
-		los = false;
-		for(int j = 0; j < points.size(); j++) {
-			// It is a line of symmetry if there is a point on this line which
-			// is not on the originating line segment (because that would be another point on
-			// the original line, not a polygon)
-			if(perpendicularLines[i].contains(points[j]) && !segments[i].contains(points[j])) {
-				los = true;\
-				break;
-			}
-		}
-		// If I sort the segments this'll be faster to find.
-		// This part requires that segment is a Set, not a Vector
-		if(!los) {
-			for(int j = i+1; j < segments.size(); j++) {
-				bool a = segments[i].parallel(segments[j]);
-                bool b = perpendicularLines[i].contains(segments[j].getMidPoint());
-                bool c = !segments[i].contains(segments[j].getMidPoint());
-                if(a && b && c) {
-					los = true;
-					break;
-				}
-			}
-		}
-		if(los) {
-			symmetryLines.push_back(perpendicularLines[i]);
-		}
-	}
+	// bool los;
+	// vector<Line> symmetryLines;
+	// for(int i = 0; i < segments.size(); i++) {
+	// 	los = false;
+	// 	for(int j = 0; j < points.size(); j++) {
+	// 		// It is a line of symmetry if there is a point on this line which
+	// 		// is not on the originating line segment (because that would be another point on
+	// 		// the original line, not a polygon)
+	// 		if(perpendicularLines[i].contains(points[j]) && !segments[i].contains(points[j])) {
+	// 			los = true;\
+	// 			break;
+	// 		}
+	// 	}
+	// 	// If I sort the segments this'll be faster to find.
+	// 	// This part requires that segment is a Set, not a Vector
+	// 	if(!los) {
+	// 		for(int j = i+1; j < segments.size(); j++) {
+	// 			bool a = segments[i].parallel(segments[j]);
+ //                bool b = perpendicularLines[i].contains(segments[j].getMidPoint());
+ //                bool c = !segments[i].contains(segments[j].getMidPoint());
+ //                if(a && b && c) {
+	// 				los = true;
+	// 				break;
+	// 			}
+	// 		}
+	// 	}
+	// 	if(los) {
+	// 		symmetryLines.push_back(perpendicularLines[i]);
+	// 	}
+	// }
 	return 0;
 }
 
