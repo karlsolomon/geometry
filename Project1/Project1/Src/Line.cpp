@@ -7,7 +7,7 @@
 double m;
 double b;
 
-Line::Line(double m = 0.0, double b = 0.0) {
+Line::Line(double m, double b) {
     this->m = m;
     this->b = b;
     if(isinf(this->m) || (D_EQUALS(this->m, -0.0)))
@@ -31,7 +31,7 @@ Line::Line(Point p1, Point p2) {
     }
 }
 
-Line::Line()
+Line::Line(void)
 {
 	this->m = 0.0;
 	this->b = 0.0;
@@ -51,7 +51,7 @@ double Line::GetIntercept(void) const {
 }
 
 // True if the value p lies on the line; false otherwise
-bool Line::Contains(Point p) {
+bool Line::Contains(const Point p) const {
     bool Contains = D_EQUALS(p.GetY() - (this->m)*p.GetX(), this->GetIntercept());
     if(isinf(this->m) && D_EQUALS(p.GetX(), this->b))
     {
@@ -61,7 +61,7 @@ bool Line::Contains(Point p) {
 }
     
 // True if the given line has the same slope, but different y-intercept; false otherwise
-bool Line::Parallel(Line l) {
+bool Line::Parallel(Line l) const {
     bool Parallel = false;
     Parallel = D_EQUALS(l.GetSlope(),this->GetSlope());
     return Parallel;
@@ -73,7 +73,7 @@ bool Line::operator<(const Line& l) const {
 	bool lessThanL = false;
 	if (!equal)
 	{
-		if (this->m == l.m)
+		if (D_EQUALS(this->m,l.m))
 		{
 			lessThanL = this->b < l.b;
 		}

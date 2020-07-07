@@ -1,3 +1,4 @@
+#include <cmath>
 #include "Point.h"
 #include "DoubleCompare.h"
 
@@ -9,7 +10,7 @@ Point::Point(void) {
 	this->y = 0.0;
 }
 
-Point::Point(double x = 0.0, double y = 0.0) {
+Point::Point(double x, double y) {
 	this->x = x;
 	this->y = y;
 }
@@ -32,7 +33,10 @@ bool Point::operator<(const Point& l) const {
 	bool lessThanP = false;
 	if (D_EQUALS(this->GetX(), l.GetX()))
 	{
-		lessThanP = this->GetY() < l.GetY();
+		if (!D_EQUALS(this->GetY(), l.GetY()))
+		{
+			lessThanP = this->GetY() < l.GetY();
+		}		
 	}
 	else
 	{

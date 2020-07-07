@@ -16,10 +16,10 @@ public:
 	double GetIntercept(void) const;
 
 	// True if the value p lies on the line; false otherwise
-	bool Contains(Point p);
+	bool Contains(const Point p) const;
 
 	// True if the given line has the same slope, but different y-intercept; false otherwise
-	bool Parallel(Line l);
+	bool Parallel(Line l) const;
 
 	// Slope is major sort factor, intercept is minor sort factor
 	bool operator<(const Line& l) const;

@@ -1,3 +1,0 @@
-﻿  main.cpp
-c:\users\ksolomon01\source\repos\geometry2\project1\project1\src\main.cpp(239): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
-  Project1.vcxproj -> C:\Users\KSolomon01\source\repos\geometry2\Project1\Debug\Project1.exe

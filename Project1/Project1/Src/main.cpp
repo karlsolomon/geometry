@@ -23,7 +23,7 @@ typedef enum
 	SOURCE_COUNT
 } PointSource_t;
 
-#define POINT_SOURCE				SOURCE_FILE
+#define POINT_SOURCE				SOURCE_HARD_CODE
 
 typedef enum
 {
@@ -35,17 +35,24 @@ typedef enum
 
 // Logging Enable/Disable and printing
 #define DEBUG_LVL					DEBUG_INFO
-#define PRINT_DEBUG(...)			if((DEBUG_LVL) >= DEBUG_FULL) printf(__VA_ARGS__)
-#define PRINT_INFO(...)				if((DEBUG_LVL) >= DEBUG_INFO) printf(__VA_ARGS__)
-#define PRINT_ERROR(...)			if((DEBUG_LVL) >= DEBUG_ERROR) printf(__VA_ARGS__)
+#define PRINT(lvl, ...)				do { \
+										if((lvl) <= DEBUG_LVL) { \
+											printf(__VA_ARGS__); \
+											printf("\n\r"); \
+										} \
+									} while(0)
+#define PRINT_ERROR(...)			PRINT(DEBUG_ERROR, __VA_ARGS__)
+#define PRINT_INFO(...)				PRINT(DEBUG_INFO, __VA_ARGS__)
+#define PRINT_DEBUG(...)			PRINT(DEBUG_FULL, __VA_ARGS__)
 
 // Random Point Generator Parameters
-#define NUM_RANDOM_POINTS			((uint32_t)16)
-#define ALLOW_NEGATIVE_RANDOM_POINT	false
-#define RANDOM_POINT_BOUND			((int) 4)
+#define NUM_RANDOM_POINTS			((uint32_t)9)
+#define ALLOW_NEGATIVE_RANDOM_POINT	true
+#define RANDOM_POINT_BOUND			((int) 2)
 
 // Function Prototypes
-static void getLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines);
+static void getPotentialLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines);
+static void getLinesOfSymmetryOnWholePointSet(set<Point> points, set<Line>* symmetryLines);
 static void initHardCodedPoints(set<Point>* points);
 static void initFilePoints(set<Point>* points);
 static void initRandomPoints(set<Point>* points);
@@ -71,22 +78,31 @@ int main(void) {
 	}
 
 	set<Line> symmetryLines;
-	getLinesOfSymmetry(points, &symmetryLines);
+	getPotentialLinesOfSymmetry(points, &symmetryLines);
+	getLinesOfSymmetryOnWholePointSet(points, &symmetryLines);
 
 	 PRINT_INFO("");
-	 PRINT_INFO("Lines of Symmetry:");
-	 PRINT_INFO("\tLines are printed in terms of y = mx+b.\n");
-	 PRINT_INFO("\tAny line which is not a function (undefined infinite slope) will print the slope as \"inf\" and the root (x-intercept) as 'b'.\n\n");
+	 PRINT_INFO("Lines of Symmetry Across All Points:");
 	 for (std::set<Line>::iterator i = symmetryLines.begin(); i != symmetryLines.end(); i++)
 	 {
-		 PRINT_INFO("\ty = %lfx + %lf\n", i->GetSlope(), i->GetIntercept());
+		 if (isinf(i->GetSlope()))
+		 {
+			 PRINT_INFO("\tx = %g", i->GetIntercept());
+		 }
+		 else if (D_EQUALS(i->GetSlope(), 0.0))
+		 {
+			 PRINT_INFO("\ty = %g", i->GetIntercept());
+		 }
+		 else
+		 {
+			 PRINT_INFO("\ty = %gx + %g", i->GetSlope(), i->GetIntercept());
+		 }
 	 }
-
 	return 0;
 }
 
 // Given a set of points get a set of all the lines of symmetry
-static void getLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines)
+static void getPotentialLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines)
 {
 	// create a line segment for each unique pair of points
 	vector<LineSegment> segments;
@@ -111,7 +127,7 @@ static void getLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines)
 			// is not on the originating line segment (because that would be another point on
 			// the original line, not a polygon)
 			if (segments[i].GetPerpendicular().Contains((*p)) && !segments[i].Contains((*p))) {
-				PRINT_DEBUG("symmetric triangle: segment %i + point (%lf,%lf)\n", i, p->GetX(), p->GetY());
+				PRINT_DEBUG("symmetric triangle: segment %i + point (%lf,%lf)", i, p->GetX(), p->GetY());
 				lineOfSymmetryFound = true;
 				break;
 			}
@@ -124,7 +140,7 @@ static void getLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines)
 				bool sameBisect = segments[i].GetPerpendicular().Contains(segments[j].GetMidPoint());
 				bool coLinear = segments[i].Contains(segments[j].GetMidPoint());
 				if (Parallel && sameBisect && !coLinear) {
-					PRINT_DEBUG("symmetric quadralateral: segment %i + segment %i\n", i, j);
+					PRINT_DEBUG("symmetric quadralateral: segment %i + segment %i", i, j);
 					lineOfSymmetryFound = true;
 					break;
 				}
@@ -136,16 +152,77 @@ static void getLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines)
 	}
 }
 
+// Given a set of points and potential lines of symmetry, remove any lines which do not apply to all points
+// in the given set.
+static void getLinesOfSymmetryOnWholePointSet(set<Point> points, set<Line>* symmetryLines)
+{
+	// create a line segment for each unique pair of points
+	set<Line>::iterator it1 = symmetryLines->begin();
+	set<Point>::iterator it2;
+	Point reflected;
+	bool symmetricForWholeSetOfPoints = true;
+	while(it1 != symmetryLines->end()) {
+		symmetricForWholeSetOfPoints = true;
+		for (it2 = points.begin(); it2 != points.end(); it2++) {
+			if (!it1->Contains((Point) *it2)) {
+				if (isinf(it1->GetSlope()))
+				{
+					// reflect x component only
+					reflected = Point(2*it1->GetIntercept() - it2->GetX(), it2->GetY());
+				}
+				else if (D_EQUALS(it1->GetSlope(), 0.0))
+				{
+					// reflect y component only
+					reflected = Point(it2->GetX(), 2*it1->GetIntercept() - it2->GetY());
+				}
+				else
+				{
+					// reflect x and y components
+
+					// Get line perpendicular to the potential line of symmetry which intersects point it2
+					Line perpLineWithPoint = Line(-1.0 / it1->GetSlope(), it2->GetY() + (it2->GetX() / it1->GetSlope()));
+
+					// Find point where perpLineWithPoint intersects the potential line of symmetry
+					double xIntersect = (perpLineWithPoint.GetIntercept() - it1->GetIntercept()) / (it1->GetSlope() - perpLineWithPoint.GetSlope());
+					
+					// Get it2's reflection across the potential line of symmetry
+					double reflectX = (2 * xIntersect) - it2->GetX();
+					reflected = Point(reflectX, perpLineWithPoint.GetSlope()*reflectX + perpLineWithPoint.GetIntercept());
+				}
+
+				if (points.find((const Point)reflected) == points.end())
+				{
+					// If it2's reflected point across potential line of symmetry is not found in the set of points
+					// then we know that this line of symmetry is not valid for this point.
+					PRINT_DEBUG("reflected point = (%lf, %lf)", reflected.GetX(), reflected.GetY());
+					symmetricForWholeSetOfPoints = false;
+					break;
+				}
+			}
+		}
+		if (symmetricForWholeSetOfPoints)
+		{
+			PRINT_DEBUG("line (%lf, %lf) remains", it1->GetSlope(), it1->GetIntercept());
+			it1++;
+		}
+		else
+		{
+			PRINT_DEBUG("line (%lf, %lf) removed from sym lines due to point (%lf,%lf)", it1->GetSlope(), it1->GetIntercept(), it2->GetX(), it2->GetY());
+			it1 = symmetryLines->erase(it1);
+		}
+	}
+}
+
 // Use hard-coded points as shown in the example to find lines of symmetry between
 static void initHardCodedPoints(set<Point>* points)
 {
-	points->insert(Point(0.0, 0.0));
-	points->insert(Point(0.0, 1.0));
-	points->insert(Point(1.0, 0.0));
-	points->insert(Point(-1.0, 0.0));
-	points->insert(Point(0.0, -1.0));
-	points->insert(Point(-1.0, -1.0));
-	points->insert(Point(1.0, 1.0));
+	// some points on the unit circle dc shifted left/up
+	double xShift = 2.0;
+	double yShift = 1.0;
+	points->insert(Point(xShift + sqrt(3.0)/2.0, 0.5 + yShift));
+	points->insert(Point(xShift + (-0.5), (sqrt(3.0) / 2.0) + yShift));
+	points->insert(Point(xShift + sqrt(3.0) / (-2.0), -0.5 + yShift));
+	points->insert(Point(xShift + 0.5, (sqrt(3.0) / -2.0) + yShift));
 }
 
 // Use a csv file to extract points from. 
@@ -172,7 +249,7 @@ static void initFilePoints(set<Point>* points)
 		}
 		else
 		{
-			PRINT_ERROR("On line %d, invalid x-point %s", lineCnt, xPos);
+			PRINT_DEBUG("On line %d, invalid x-point %s", lineCnt, xPos);
 			validPoint = false;
 		}
 		yPos = strtok(NULL, ", ");
@@ -182,7 +259,7 @@ static void initFilePoints(set<Point>* points)
 		}
 		else
 		{
-			PRINT_ERROR("On line %d, invalid y-point %s", lineCnt, yPos);
+			PRINT_DEBUG("On line %d, invalid y-point %s", lineCnt, yPos);
 			validPoint = false;
 		}
 		if (validPoint)
@@ -211,10 +288,15 @@ bool isPointValid(char* pointStr)
 					// leading negative char is OK
 					continue;
 				}
+				else if ((pointStr[i] == '\n' ) || (pointStr[i] == '\r') || (pointStr[i] == '\0'))
+				{
+					// received end of line/end of file character
+					break;
+				}
 				else
 				{
 					// invalid character; skip this line
-					PRINT_ERROR("Invalid point %s", pointStr);
+					PRINT_DEBUG("Invalid point %s", pointStr);
 					valid = false;
 					break;
 				}
@@ -223,7 +305,7 @@ bool isPointValid(char* pointStr)
 	}
 	else
 	{
-		PRINT_ERROR("Invalid point was NULL");
+		PRINT_DEBUG("Invalid point was NULL");
 		valid = false;
 	}
 	return valid;

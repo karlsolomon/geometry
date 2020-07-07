@@ -9,7 +9,6 @@ private:
 	Line perpendicular;
 
 public:
-	LineSegment();
 	LineSegment(Point p1, Point p2);
 	~LineSegment();
 	Point GetMidPoint(void) const;

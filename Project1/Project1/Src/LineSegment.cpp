@@ -8,14 +8,6 @@ Point p1;
 Point p2;
 Line perpendicular;
 
-LineSegment::LineSegment()
-{
-	this->p1 = Point(0.0, 0.0);
-	this->p2 = Point(0.0, 0.0);
-	this->midpt = Point(0.0, 0.0);
-	this->perpendicular = Line(0.0, 0.0);
-}
-
 LineSegment::~LineSegment()
 {
 }
