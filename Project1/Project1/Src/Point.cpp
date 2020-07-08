@@ -11,8 +11,22 @@ Point::Point(void) {
 }
 
 Point::Point(double x, double y) {
-	this->x = x;
-	this->y = y;
+	if (D_EQUALS(x, 0.0))
+	{
+		this->x = 0.0;
+	}
+	else
+	{
+		this->x = x;
+	}
+	if (D_EQUALS(y, 0.0))
+	{
+		this->y = 0.0;
+	}
+	else
+	{
+		this->y = y;
+	}
 }
 
 Point::~Point()

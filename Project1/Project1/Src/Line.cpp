@@ -14,15 +14,38 @@ Line::Line(double m, double b) {
     {
         this->m = abs(this->m);
     }
+
+    // round nearly zero slope/intercepts to 0.0
+    if(D_EQUALS(this->m, 0.0))
+    {
+        this->m = 0.0;
+    }
+    if(D_EQUALS(this->b, 0.0))
+    {
+        this->b = 0.0;
+    }
 }
 
 Line::Line(Point p1, Point p2) {
-    this->m = (p2.GetY() - p1.GetY()) / (p2.GetX() - p1.GetX());
-    if(isinf(this->m) || (D_EQUALS(this->m, -0.0)))
-    {
-        this->m = abs(this->m);
-    }
-    this->b = p1.GetY() - this->m*p1.GetX();
+	double rise = (p2.GetY() - p1.GetY());
+    double run = (p2.GetX() - p1.GetX());
+
+	if (D_EQUALS(rise, 0.0) && !D_EQUALS(run, 0.0))
+	{
+		this->m = 0.0;
+	}
+	else if (D_EQUALS(run, 0.0) && !D_EQUALS(rise, 0.0))
+	{
+		this->m = HUGE_VAL;
+	}
+	else
+	{
+		this->m = rise / run;
+	}
+
+	double mul = 0.0;
+	D_MUL(this->m, p1.GetX(), &mul);
+	this->b = p1.GetY() - mul;
 
     if(isinf(this->m))
     {

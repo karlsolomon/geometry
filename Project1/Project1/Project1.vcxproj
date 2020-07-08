@@ -87,6 +87,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\KSolomon01\source\repos\geometry\Project1\Project1\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -126,7 +128,9 @@
   <ItemGroup>
     <ClCompile Include="Src\LineSegment.cpp" />
     <ClCompile Include="Src\Line.cpp" />
-    <ClCompile Include="Src\main.cpp" />
+    <ClCompile Include="Src\main.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\KSolomon01\source\repos\geometry\Project1\Project1\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="Src\Point.cpp" />
   </ItemGroup>
   <ItemGroup>

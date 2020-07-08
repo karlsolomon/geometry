@@ -18,12 +18,13 @@ using namespace std;
 typedef enum
 {
 	SOURCE_HARD_CODE,
+	SOURCE_HARD_CODE_UNIT_CIRCLE,
 	SOURCE_FILE,
 	SOURCE_RANDOM,
 	SOURCE_COUNT
 } PointSource_t;
 
-#define POINT_SOURCE				SOURCE_HARD_CODE
+#define POINT_SOURCE				SOURCE_HARD_CODE_UNIT_CIRCLE
 
 typedef enum
 {
@@ -50,10 +51,19 @@ typedef enum
 #define ALLOW_NEGATIVE_RANDOM_POINT	true
 #define RANDOM_POINT_BOUND			((int) 2)
 
+// Hard-code unit circle configs - feel free to change these to whatever you'd like to get more tests.
+// If you make radius small enough (or num points large enough) you'll eventually hit the rounding error built into the double math.
+#define UNIT_CIRCLE_NUM_POINTS			((uint16_t)201)	// number of points to evently distribute about a unit circle. Creates equilateral polygons w/ this number of vertices
+#define UNIT_CIRCLE_ROTATION_RADIANS	(1.1)	// number of radians to rotate/advance each point in the unit circle. This way equilateral polygon isn't always "facing up".
+#define UNIT_CIRCLE_X_SHIFT				(3.1)	// units to dc-shift the unit circle along x-axis
+#define UNIT_CIRCLE_Y_SHIFT				(2)		// units to dc-shift the unit circle along x-axis
+#define UNIT_CIRCLE_RADIUS				(1.01)
+
 // Function Prototypes
 static void getPotentialLinesOfSymmetry(set<Point> points, set<Line>* symmetryLines);
 static void getLinesOfSymmetryOnWholePointSet(set<Point> points, set<Line>* symmetryLines);
 static void initHardCodedPoints(set<Point>* points);
+static void initUnitCirclePoints(set<Point>* points);
 static void initFilePoints(set<Point>* points);
 static void initRandomPoints(set<Point>* points);
 static double formatIntToDoubleWithBounds(int val);
@@ -65,6 +75,9 @@ int main(void) {
 	{
 	case SOURCE_HARD_CODE:
 		initHardCodedPoints(&points);
+		break;
+	case SOURCE_HARD_CODE_UNIT_CIRCLE:
+		initUnitCirclePoints(&points);
 		break;
 	case SOURCE_FILE:
 		initFilePoints(&points);
@@ -82,7 +95,7 @@ int main(void) {
 	getLinesOfSymmetryOnWholePointSet(points, &symmetryLines);
 
 	 PRINT_INFO("");
-	 PRINT_INFO("Lines of Symmetry Across All Points:");
+	 PRINT_INFO("Lines of Symmetry Across All Points (nPoints = %i, nLines = %i):", points.size(), symmetryLines.size());
 	 for (std::set<Line>::iterator i = symmetryLines.begin(); i != symmetryLines.end(); i++)
 	 {
 		 if (isinf(i->GetSlope()))
@@ -216,13 +229,28 @@ static void getLinesOfSymmetryOnWholePointSet(set<Point> points, set<Line>* symm
 // Use hard-coded points as shown in the example to find lines of symmetry between
 static void initHardCodedPoints(set<Point>* points)
 {
-	// some points on the unit circle dc shifted left/up
-	double xShift = 2.0;
-	double yShift = 1.0;
-	points->insert(Point(xShift + sqrt(3.0)/2.0, 0.5 + yShift));
-	points->insert(Point(xShift + (-0.5), (sqrt(3.0) / 2.0) + yShift));
-	points->insert(Point(xShift + sqrt(3.0) / (-2.0), -0.5 + yShift));
-	points->insert(Point(xShift + 0.5, (sqrt(3.0) / -2.0) + yShift));
+	points->insert(Point(0.0, 0.0));
+	points->insert(Point(0.0, 1.0));
+	points->insert(Point(1.0, 0.0));
+	points->insert(Point(-1.0, 0.0));
+	points->insert(Point(0.0, -1.0));
+	points->insert(Point(-1.0, -1.0));
+	points->insert(Point(1.0, 1.0));
+}
+
+// Use hard-coded points from unit circle
+static void initUnitCirclePoints(set<Point>* points)
+{
+	double pi = 2.0*acos(0.0);
+	double x;
+	double y;
+	// add all points of unit circle with UNIT_CIRCLE_NUM_POINTS separation
+	for (int i = 0; i < UNIT_CIRCLE_NUM_POINTS; i++)
+	{
+		x = UNIT_CIRCLE_X_SHIFT + (UNIT_CIRCLE_RADIUS * cos(UNIT_CIRCLE_ROTATION_RADIANS + (i * pi) / (UNIT_CIRCLE_NUM_POINTS / 2.0)));
+		y = UNIT_CIRCLE_Y_SHIFT + (UNIT_CIRCLE_RADIUS * sin(UNIT_CIRCLE_ROTATION_RADIANS + (i * pi) / (UNIT_CIRCLE_NUM_POINTS / 2.0)));
+		points->insert(Point(x, y));
+	}
 }
 
 // Use a csv file to extract points from. 
