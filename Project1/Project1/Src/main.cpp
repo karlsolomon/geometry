@@ -53,7 +53,7 @@ typedef enum
 
 // Hard-code unit circle configs - feel free to change these to whatever you'd like to get more tests.
 // If you make radius small enough (or num points large enough) you'll eventually hit the rounding error built into the double math.
-#define UNIT_CIRCLE_NUM_POINTS			((uint16_t)201)	// number of points to evently distribute about a unit circle. Creates equilateral polygons w/ this number of vertices
+#define UNIT_CIRCLE_NUM_POINTS			((uint16_t)21)	// number of points to evently distribute about a unit circle. Creates equilateral polygons w/ this number of vertices
 #define UNIT_CIRCLE_ROTATION_RADIANS	(1.1)	// number of radians to rotate/advance each point in the unit circle. This way equilateral polygon isn't always "facing up".
 #define UNIT_CIRCLE_X_SHIFT				(3.1)	// units to dc-shift the unit circle along x-axis
 #define UNIT_CIRCLE_Y_SHIFT				(2)		// units to dc-shift the unit circle along x-axis
@@ -95,7 +95,7 @@ int main(void) {
 	getLinesOfSymmetryOnWholePointSet(points, &symmetryLines);
 
 	 PRINT_INFO("");
-	 PRINT_INFO("Lines of Symmetry Across All Points (nPoints = %i, nLines = %i):", points.size(), symmetryLines.size());
+	 PRINT_INFO("Lines of Symmetry Across All Points (nPoints = %ld, nLines = %ld):", points.size(), symmetryLines.size());
 	 for (std::set<Line>::iterator i = symmetryLines.begin(); i != symmetryLines.end(); i++)
 	 {
 		 if (isinf(i->GetSlope()))
